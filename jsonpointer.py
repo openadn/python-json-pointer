@@ -55,7 +55,7 @@ class JsonPointerException(Exception):
 
 
 _nothing = object()
-
+_all_children = object()
 
 def resolve_pointer(doc, pointer, default=_nothing):
     """
@@ -128,26 +128,49 @@ class JsonPointer(object):
             raise JsonPointerException('location must starts with /')
 
         parts = map(unquote, parts)
-        parts = [part.replace('~1', '/') for part in parts]
-        parts = [part.replace('~0', '~') for part in parts]
+        def replace_escapes(from_, to):
+            def _inner(part):
+                try:
+                    return part.replace(from_, to)
+                except:
+                    return part
+            return _inner
+
+        def replace_sentinal(from_, to):
+            def _inner(part):
+                if part == from_:
+                    return to
+                return part
+            return _inner
+
+        parts = map(replace_sentinal('*', _all_children), parts)
+        parts = map(replace_escapes('~2', '*'), parts)
+        parts = map(replace_escapes('~1', '/'), parts)
+        parts = map(replace_escapes('~0', '~'), parts)
         self.parts = parts
+        self.seen_wildcard = False
 
 
 
     def resolve(self, doc, default=_nothing):
         """Resolves the pointer against doc and returns the referenced object"""
-
+        docs = [doc]
         for part in self.parts:
+            new_docs = []
+            for doc in docs:
+                try:
+                    new_docs.extend(self.walk(doc, part))
+                except JsonPointerException:
+                    if default is _nothing:
+                        raise
+                    else:
+                        return default
+            docs = new_docs
 
-            try:
-                doc = self.walk(doc, part)
-            except JsonPointerException:
-                if default is _nothing:
-                    raise
-                else:
-                    return default
-
-        return doc
+        if self.seen_wildcard:
+            return docs
+        else:
+            return docs[0]
 
 
     get = resolve
@@ -166,8 +189,12 @@ class JsonPointer(object):
 
 
         for part, nextpart in pairwise(fullpath):
+            if part is _all_children:
+                raise JsonPointerException("Can't set values using wildcards.")
+
             try:
-                doc = self.walk(doc, part)
+                docs = self.walk(doc, part)
+                doc = docs[0]
             except JsonPointerException:
                 step_val = [] if nextpart.isdigit() else {}
                 doc = self._set_value(doc, part, step_val)
@@ -198,13 +225,17 @@ class JsonPointer(object):
     def walk(self, doc, part):
         """ Walks one step in doc and returns the referenced part """
 
+        if part is _all_children:
+            self.seen_wildcard = True
+            return doc
+
         # Its not clear if a location "1" should be considered as 1 or "1"
         # We prefer the integer-variant if possible
         part_variants = self._try_parse(part) + [part]
 
         for variant in part_variants:
             try:
-                return doc[variant]
+                return [doc[variant]]
             except:
                 continue
 

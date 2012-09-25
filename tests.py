@@ -36,7 +36,20 @@ class SpecificationTests(unittest.TestCase):
         self.assertEqual(resolve_pointer(doc, "/ "), 7)
         self.assertEqual(resolve_pointer(doc, "/m~0n"), 8)
 
+    def test_extensions(self):
+        doc = {
+            "foo": [
+                {
+                    "name": "bar"
+                },
+                {
+                    "name": "baz"
+                }
+            ]
+        }
 
+        self.assertEqual(resolve_pointer(doc, "/foo/*"), [{"name":"bar"}, {"name": "baz"}])
+        self.assertEqual(resolve_pointer(doc, "/foo/*/name"), ["bar", "baz"])
 
 
 modules = ['jsonpointer']
