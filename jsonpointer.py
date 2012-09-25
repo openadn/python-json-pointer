@@ -136,14 +136,14 @@ class JsonPointer(object):
                     return part
             return _inner
 
-        def replace_sentinal(from_, to):
+        def replace_sentinel(from_, to):
             def _inner(part):
                 if part == from_:
                     return to
                 return part
             return _inner
 
-        parts = map(replace_sentinal('*', _all_children), parts)
+        parts = map(replace_sentinel('*', _all_children), parts)
         parts = map(replace_escapes('~2', '*'), parts)
         parts = map(replace_escapes('~1', '/'), parts)
         parts = map(replace_escapes('~0', '~'), parts)
