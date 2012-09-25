@@ -125,7 +125,7 @@ class JsonPointer(object):
     def __init__(self, pointer):
         parts = pointer.split('/')
         if parts.pop(0) != '':
-            raise JsonPointerException('location must starts with /')
+            raise JsonPointerException('location must start with /')
 
         parts = map(unquote, parts)
         def replace_escapes(from_, to):
