@@ -161,7 +161,9 @@ class JsonPointer(object):
                 try:
                     new_docs.extend(self.walk(doc, part))
                 except JsonPointerException:
-                    if default is _nothing:
+                    if self.seen_wildcard:
+                        pass
+                    elif default is _nothing:
                         raise
                     else:
                         return default

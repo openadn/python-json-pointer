@@ -51,6 +51,20 @@ class SpecificationTests(unittest.TestCase):
         self.assertEqual(resolve_pointer(doc, "/foo/*"), [{"name":"bar"}, {"name": "baz"}])
         self.assertEqual(resolve_pointer(doc, "/foo/*/name"), ["bar", "baz"])
 
+        doc = {
+            "foo": [
+                {
+                    "foo": "bar"
+                },
+                {
+                    "bar": "baz"
+                }
+            ]
+        }
+
+        self.assertEqual(resolve_pointer(doc, "/foo/*/bar"), ["baz"])
+
+
 
 modules = ['jsonpointer']
 coverage_modules = []
